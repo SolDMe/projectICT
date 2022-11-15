@@ -18,6 +18,11 @@ static const int SET_SINGLE = 3;
 static const int WINDOW_SIZE_X = 800;
 static const int WINDOW_SIZE_Y = 800;
 
+// путь к файлу вывода
+static const char OUTPUT_PATH[255] = "H:/projectICT/files/out.text";
+// путь к файлу ввода
+static const char INPUT_PATH[255] = "H:/projectICT/files/in.txt";
+
 // буфер, хранящий координаты последней добавленной вершины
 int lastAddPosBuf[2] = {0, 0};
 
@@ -58,6 +63,40 @@ struct Point {
 
 std::vector<Point> points;
 
+// загрузка из файла
+void loadFromFile() {
+    // открываем поток данных для чтения из файла
+    std::ifstream input(INPUT_PATH);
+    // очищаем массив точек
+    points.clear();
+    // пока не достигнут конец файла
+    while (!input.eof()) {
+        int x, y, s;
+        input >> x; // читаем x координату
+        input >> y; // читаем y координату
+        input >> s; // читаем номер множества
+        // добавляем в динамический массив точку на основе прочитанных данных
+        points.emplace_back(Point(sf::Vector2i(x, y), s));
+    }
+    // закрываем файл
+    input.close();
+}
+
+// запись в файл
+void saveToFile() {
+    // открываем поток данных для записи в файл
+    std::ofstream output(OUTPUT_PATH);
+
+    // перебираем точки
+    for (auto point: points) {
+        // выводим через пробел построчно: x-координату, y-координату и номер множества
+        output << point.pos.x << " " << point.pos.y << " " << point.setNum << std::endl;
+    }
+
+    // закрываем
+    output.close();
+}
+
 void randomize(int cnt) {
     for (int i = 0; i < cnt; i++) {
         points.emplace_back(Point::randomPoint());
@@ -77,6 +116,36 @@ void ShowBackgroundSetting() {
         // задаём цвет фона
         setColor(color);
     }
+}
+
+// работа с файлами
+void ShowFiles() {
+    // если не раскрыта панель `Files`
+    if (!ImGui::CollapsingHeader("Files"))
+        // заканчиваем выполнение
+        return;
+
+    // первый элемент в линии
+    ImGui::PushID(0);
+    // создаём кнопку загрузки
+    if (ImGui::Button("Load")) {
+        // загружаем данные из файла
+        loadFromFile();
+    }
+    // восстанавливаем буфер id
+    ImGui::PopID();
+
+    // следующий элемент будет на той же строчке
+    ImGui::SameLine();
+    // второй элемент
+    ImGui::PushID(1);
+    // создаём кнопку сохранения
+    if (ImGui::Button("Save")) {
+        // сохраняем задачу в файл
+        saveToFile();
+    }
+    // восстанавливаем буфер id
+    ImGui::PopID();
 }
 
 // рисование задачи на невидимом окне во всё окно приложения
@@ -234,6 +303,9 @@ int main() {
 
         // добавление случайных точек
         ShowRandomize();
+
+        // работа с файлами
+        ShowFiles();
 
         // конец рисование окна
         ImGui::End();
