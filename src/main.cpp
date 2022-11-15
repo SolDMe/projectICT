@@ -15,8 +15,14 @@ static const int SET_CROSSED = 2;
 // разность множеств
 static const int SET_SINGLE = 3;
 
+static const int WINDOW_SIZE_X = 800;
+static const int WINDOW_SIZE_Y = 800;
+
 // буфер, хранящий координаты последней добавленной вершины
 int lastAddPosBuf[2] = {0, 0};
+
+// буфер кол-ва случайных точек
+int lastRandoCntBuf[1] = {10};
 
 // цвет фона
 static sf::Color bgColor;
@@ -39,7 +45,24 @@ struct Point {
     // конструктор
     Point(const sf::Vector2i &pos, int setNum) : pos(pos), setNum(setNum) {
     }
+
+    // получить случайную точку
+    static Point randomPoint() {
+        return Point(sf::Vector2i(
+                             rand() % WINDOW_SIZE_X,
+                             rand() % WINDOW_SIZE_Y),
+                     rand() % 2
+        );
+    }
 };
+
+std::vector<Point> points;
+
+void randomize(int cnt) {
+    for (int i = 0; i < cnt; i++) {
+        points.emplace_back(Point::randomPoint());
+    }
+}
 
 void ShowBackgroundSetting() {
     // если не раскрыт список `Background`
@@ -55,11 +78,6 @@ void ShowBackgroundSetting() {
         setColor(color);
     }
 }
-
-static const int WINDOW_SIZE_X = 800;
-static const int WINDOW_SIZE_Y = 800;
-
-std::vector<Point> points;
 
 // рисование задачи на невидимом окне во всё окно приложения
 void RenderTask() {
@@ -86,6 +104,33 @@ void RenderTask() {
     }
     // заканчиваем рисование окна
     ImGui::End();
+}
+
+// панель добавления случайных точек
+void ShowRandomize() {
+    // если не раскрыта панель `Randomize`
+    if (!ImGui::CollapsingHeader("Randomize"))
+        // заканчиваем выполнение
+        return;
+
+    // первый элемент в строке
+    ImGui::PushID(0);
+
+    // Инструмент выбора кол-ва
+    if (ImGui::DragInt("Count", lastRandoCntBuf, 0.1, 0, 100)) {
+
+    }
+    // восстанавливаем буффер id
+    ImGui::PopID();
+    // следующий элемент будет на той же строчке
+    ImGui::SameLine();
+    // второй элемент
+    ImGui::PushID(1);
+    // создаём кнопку добавления
+    if (ImGui::Button("Add"))
+        // по клику добавляем заданное число случайных точек
+        randomize(lastRandoCntBuf[0]);
+    ImGui::PopID();
 }
 
 // ручное добавление элементов
@@ -186,6 +231,9 @@ int main() {
         ShowBackgroundSetting();
         // ручное добавление элементов
         ShowAddElem();
+
+        // добавление случайных точек
+        ShowRandomize();
 
         // конец рисование окна
         ImGui::End();
