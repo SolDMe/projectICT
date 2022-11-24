@@ -6,15 +6,7 @@
 #include <imgui.h>
 #include <fstream>
 #include <iostream>
-
-// первое множество
-static const int SET_1 = 0;
-// второе множество
-static const int SET_2 = 1;
-// пересечение множеств
-static const int SET_CROSSED = 2;
-// разность множеств
-static const int SET_SINGLE = 3;
+#include <deque>
 
 static const int WINDOW_SIZE_X = 800;
 static const int WINDOW_SIZE_Y = 800;
@@ -46,26 +38,25 @@ static void setColor(float *pDouble) {
 struct Point {
     // положение
     sf::Vector2i pos;
-    // номер множества
-    int setNum;
 
     // конструктор
-    Point(const sf::Vector2i &pos, int setNum) : pos(pos), setNum(setNum) {
+    Point(const sf::Vector2i &pos) : pos(pos) {
     }
 
     // получить случайную точку
     static Point randomPoint() {
         return Point(sf::Vector2i(
                              rand() % WINDOW_SIZE_X,
-                             rand() % WINDOW_SIZE_Y),
-                     rand() % 2
+                             rand() % WINDOW_SIZE_Y)
         );
     }
 };
 
 std::vector<Point> points;
 
-// загрузка из файла
+std::vector<Point> triangle;
+
+/*// загрузка из файла
 void loadFromFile() {
     std::cout << "preLoad " << INPUT_PATH << std::endl;
 
@@ -112,7 +103,7 @@ void randomize(int cnt) {
     for (int i = 0; i < cnt; i++) {
         points.emplace_back(Point::randomPoint());
     }
-}
+}*/
 
 void ShowBackgroundSetting() {
     // если не раскрыт список `Background`
@@ -157,7 +148,7 @@ void ShowFiles() {
     }
     // восстанавливаем буфер id
     ImGui::PopID();
-}*/
+}
 
 // решение задачи
 void solve() {
@@ -172,7 +163,7 @@ void solve() {
         if (point.setNum != SET_CROSSED)
             point.setNum = SET_SINGLE;
 
-}
+}*/
 
 // рисование задачи на невидимом окне во всё окно приложения
 void RenderTask() {
@@ -190,7 +181,7 @@ void RenderTask() {
     // перебираем точки из динамического массива точек
     for (auto point: points) {
         ImColor clr;
-        // Устанавливаем цвет по номеру множества
+        /*// Устанавливаем цвет по номеру множества
         switch (point.setNum) {
             case SET_1:
                 clr = ImColor(200, 100, 150);
@@ -204,7 +195,7 @@ void RenderTask() {
             case SET_SINGLE:
                 clr = ImColor(150, 200, 100);
                 break;
-        }
+        }*/
         // добавляем в список рисования круг
         pDrawList->AddCircleFilled(
                 sf::Vector2i(point.pos.x, point.pos.y),
@@ -217,7 +208,7 @@ void RenderTask() {
     ImGui::End();
 }
 
-// панель добавления случайных точек
+/*// панель добавления случайных точек
 void ShowRandomize() {
     // если не раскрыта панель `Randomize`
     if (!ImGui::CollapsingHeader("Randomize"))
@@ -308,7 +299,7 @@ void ShowSolve() {
     }
     // восстанавливаем буфер id
     ImGui::PopID();
-}
+}*/
 
 // главный метод
 int main() {
@@ -348,9 +339,13 @@ int main() {
                     lastAddPosBuf[1] = event.mouseButton.y;
                     // если левая кнопка мыши
                     if (event.mouseButton.button == sf::Mouse::Button::Left)
-                        points.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), SET_1);
+                        points.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
                     else
-                        points.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), SET_2);
+                        if(triangle.size()<3) triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+                        else {
+                            triangle.
+                            triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+                        }
                 }
             }
         }
@@ -369,17 +364,17 @@ int main() {
 
         // рисование параметров цвета
         ShowBackgroundSetting();
-        // ручное добавление элементов
+        /*// ручное добавление элементов
         ShowAddElem();
 
         // добавление случайных точек
-        ShowRandomize();
+        //ShowRandomize();
 
         // решение задачи
-        ShowSolve();
+        //ShowSolve();
 
         // работа с файлами
-        //ShowFiles();
+        //ShowFiles(); */
 
         // конец рисование окна
         ImGui::End();
