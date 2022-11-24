@@ -5,6 +5,7 @@
 #include <imgui-SFML.h>
 #include <imgui.h>
 #include <fstream>
+#include <iostream>
 
 // первое множество
 static const int SET_1 = 0;
@@ -35,7 +36,7 @@ static sf::Color bgColor;
 float color[3] = {0.12f, 0.12f, 0.13f};
 
 // задать цвет фона по вещественному массиву компонент
-static void setColor(float * pDouble){
+static void setColor(float *pDouble) {
     bgColor.r = static_cast<sf::Uint8>(pDouble[0] * 255.f);
     bgColor.g = static_cast<sf::Uint8>(pDouble[1] * 255.f);
     bgColor.b = static_cast<sf::Uint8>(pDouble[2] * 255.f);
@@ -47,6 +48,7 @@ struct Point {
     sf::Vector2i pos;
     // номер множества
     int setNum;
+
     // конструктор
     Point(const sf::Vector2i &pos, int setNum) : pos(pos), setNum(setNum) {
     }
@@ -65,8 +67,14 @@ std::vector<Point> points;
 
 // загрузка из файла
 void loadFromFile() {
+    std::cout << "preLoad " << INPUT_PATH << std::endl;
+
+
     // открываем поток данных для чтения из файла
     std::ifstream input(INPUT_PATH);
+
+    std::cout << "preLoad2" << std::endl;
+
     // очищаем массив точек
     points.clear();
     // пока не достигнут конец файла
@@ -75,6 +83,9 @@ void loadFromFile() {
         input >> x; // читаем x координату
         input >> y; // читаем y координату
         input >> s; // читаем номер множества
+
+        std::cout << x << " " << y << " " << s << std::endl;
+
         // добавляем в динамический массив точку на основе прочитанных данных
         points.emplace_back(Point(sf::Vector2i(x, y), s));
     }
@@ -118,7 +129,7 @@ void ShowBackgroundSetting() {
     }
 }
 
-// работа с файлами
+/*// работа с файлами
 void ShowFiles() {
     // если не раскрыта панель `Files`
     if (!ImGui::CollapsingHeader("Files"))
@@ -146,6 +157,21 @@ void ShowFiles() {
     }
     // восстанавливаем буфер id
     ImGui::PopID();
+}*/
+
+// решение задачи
+void solve() {
+    // у совпадающих по координатам точек меняем множество на SET_CROSSED
+    for (int i = 0; i < points.size(); i++)
+        for (int j = i + 1; j < points.size(); j++)
+            if (points[i].pos == points[j].pos)
+                points[i].setNum = points[j].setNum = SET_CROSSED;
+
+    // у всех точек, у которых множество не SET_CROSSED, задаём множество SET_SINGLE
+    for (auto &point: points)
+        if (point.setNum != SET_CROSSED)
+            point.setNum = SET_SINGLE;
+
 }
 
 // рисование задачи на невидимом окне во всё окно приложения
@@ -163,11 +189,27 @@ void RenderTask() {
 
     // перебираем точки из динамического массива точек
     for (auto point: points) {
+        ImColor clr;
+        // Устанавливаем цвет по номеру множества
+        switch (point.setNum) {
+            case SET_1:
+                clr = ImColor(200, 100, 150);
+                break;
+            case SET_2:
+                clr = ImColor(100, 200, 150);
+                break;
+            case SET_CROSSED:
+                clr = ImColor(100, 150, 200);
+                break;
+            case SET_SINGLE:
+                clr = ImColor(150, 200, 100);
+                break;
+        }
         // добавляем в список рисования круг
         pDrawList->AddCircleFilled(
                 sf::Vector2i(point.pos.x, point.pos.y),
                 3,
-                point.setNum == SET_1 ? ImColor(200, 100, 150) : ImColor(100, 200, 150),
+                clr,
                 20
         );
     }
@@ -239,10 +281,39 @@ void ShowAddElem() {
 
 }
 
+// решение задачи
+void ShowSolve() {
+    // если не раскрыта панель `Solve`
+    if (!ImGui::CollapsingHeader("Solve"))
+        return;
+    // первый элемент в линии
+    ImGui::PushID(0);
+    // создаём кнопку решения
+    if (ImGui::Button("Solve")) {
+        solve();
+    }
+
+    // восстанавливаем буфер id
+    ImGui::PopID();
+
+    // следующий элемент будет на той же строчке
+    ImGui::SameLine();
+    // второй элемент
+    ImGui::PushID(1);
+
+    // создаём кнопку очистки
+    if (ImGui::Button("Clear")) {
+        // удаляем все точки
+        points.clear();
+    }
+    // восстанавливаем буфер id
+    ImGui::PopID();
+}
+
 // главный метод
 int main() {
     // создаём окно для рисования
-    sf::RenderWindow window(sf::VideoMode(WINDOW_SIZE_X, WINDOW_SIZE_Y), "Geometry Project 10");
+    sf::RenderWindow window(sf::VideoMode(WINDOW_SIZE_X, WINDOW_SIZE_Y), "Geometry Project 6");
     // задаём частоту перерисовки окна
     window.setFramerateLimit(60);
     // инициализация imgui+sfml
@@ -304,8 +375,11 @@ int main() {
         // добавление случайных точек
         ShowRandomize();
 
+        // решение задачи
+        ShowSolve();
+
         // работа с файлами
-        ShowFiles();
+        //ShowFiles();
 
         // конец рисование окна
         ImGui::End();
