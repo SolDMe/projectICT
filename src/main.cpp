@@ -6,7 +6,6 @@
 #include <imgui.h>
 #include <fstream>
 #include <iostream>
-#include <deque>
 
 static const int WINDOW_SIZE_X = 800;
 static const int WINDOW_SIZE_Y = 800;
@@ -46,8 +45,8 @@ struct Point {
     // получить случайную точку
     static Point randomPoint() {
         return Point(sf::Vector2i(
-                             rand() % WINDOW_SIZE_X,
-                             rand() % WINDOW_SIZE_Y)
+                rand() % WINDOW_SIZE_X,
+                rand() % WINDOW_SIZE_Y)
         );
     }
 };
@@ -97,12 +96,6 @@ void saveToFile() {
 
     // закрываем
     output.close();
-}
-
-void randomize(int cnt) {
-    for (int i = 0; i < cnt; i++) {
-        points.emplace_back(Point::randomPoint());
-    }
 }*/
 
 void ShowBackgroundSetting() {
@@ -181,21 +174,7 @@ void RenderTask() {
     // перебираем точки из динамического массива точек
     for (auto point: points) {
         ImColor clr;
-        /*// Устанавливаем цвет по номеру множества
-        switch (point.setNum) {
-            case SET_1:
-                clr = ImColor(200, 100, 150);
-                break;
-            case SET_2:
-                clr = ImColor(100, 200, 150);
-                break;
-            case SET_CROSSED:
-                clr = ImColor(100, 150, 200);
-                break;
-            case SET_SINGLE:
-                clr = ImColor(150, 200, 100);
-                break;
-        }*/
+        clr = ImColor(200, 100, 150);
         // добавляем в список рисования круг
         pDrawList->AddCircleFilled(
                 sf::Vector2i(point.pos.x, point.pos.y),
@@ -204,11 +183,43 @@ void RenderTask() {
                 20
         );
     }
+    ImColor clr;
+    for (auto point: triangle) {
+        clr = ImColor(100, 100, 250);
+        // добавляем в список рисования круг
+        pDrawList->AddCircleFilled(
+                point.pos,
+                4,
+                clr,
+                20
+        );
+    }
+    if (triangle.size() == 3) {
+        pDrawList->AddLine(
+                triangle[0].pos,
+                triangle[1].pos,
+                clr,
+                1.5f
+        );
+        sf::Vector2i(triangle[0].pos);
+        pDrawList->AddLine(
+                triangle[0].pos,
+                triangle[2].pos,
+                clr,
+                1.5f
+        );
+        pDrawList->AddLine(
+                triangle[1].pos,
+                triangle[2].pos,
+                clr,
+                1.5f
+        );
+    }
     // заканчиваем рисование окна
     ImGui::End();
 }
 
-/*// панель добавления случайных точек
+// панель добавления случайных точек
 void ShowRandomize() {
     // если не раскрыта панель `Randomize`
     if (!ImGui::CollapsingHeader("Randomize"))
@@ -224,14 +235,18 @@ void ShowRandomize() {
     }
     // восстанавливаем буффер id
     ImGui::PopID();
-    // следующий элемент будет на той же строчке
-    ImGui::SameLine();
     // второй элемент
     ImGui::PushID(1);
     // создаём кнопку добавления
-    if (ImGui::Button("Add"))
-        // по клику добавляем заданное число случайных точек
-        randomize(lastRandoCntBuf[0]);
+    if (ImGui::Button("Add points")) {
+        for(int i=0;i<lastRandoCntBuf[0];i++) points.emplace_back( Point::randomPoint() );
+    }
+    ImGui::PopID();
+    ImGui::PushID(2);
+    if (ImGui::Button("Add 3 points of triangle")) {
+        for(int i=0;i<triangle.size();) triangle.pop_back();
+        for(int i=0;i<3;i++) triangle.emplace_back(Point::randomPoint());
+    }
     ImGui::PopID();
 }
 
@@ -243,7 +258,7 @@ void ShowAddElem() {
         return;
 
 
-    // Инструмент выбора цвета
+    // Инструмент выбора координаты
     if (ImGui::DragInt2("Coords", lastAddPosBuf, 0.5f, 0, std::min(WINDOW_SIZE_X, WINDOW_SIZE_Y))) {
         // никаких действий не требуется, достаточно
         // тех изменений буфера, которые imGui выполняет
@@ -253,26 +268,28 @@ void ShowAddElem() {
     // фиксируем id равный 0 для первого элемента
     ImGui::PushID(0);
     // если нажата кнопка `Set 1`
-    if (ImGui::Button("Set 1"))
+    if (ImGui::Button("Add point"))
         // добавляем то добавляем в список точку, принадлежащую первому множеству
-        points.emplace_back(Point(sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]), SET_1));
+        points.emplace_back(Point(sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1])));
     // восстанавливаем буфер id
     ImGui::PopID();
 
-    // говорим imGui, что следующий элемент нужно рисовать на той же линии
-    ImGui::SameLine();
     // задаём id, равный одному
     ImGui::PushID(1);
     // если нажата кнопка `Set 2`
-    if (ImGui::Button("Set 2"))
-        // добавляем то добавляем в список точку, принадлежащую второму множеству
-        points.emplace_back(Point(sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]), SET_2));
+    if (ImGui::Button("Add point of triangle"))
+        if (triangle.size() < 3) {
+            triangle.emplace_back(sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]));
+        } else {
+            triangle.erase(triangle.begin());
+            triangle.emplace_back(sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]));
+        }
     // восстанавливаем буфер id
     ImGui::PopID();
 
 }
 
-// решение задачи
+/*// решение задачи
 void ShowSolve() {
     // если не раскрыта панель `Solve`
     if (!ImGui::CollapsingHeader("Solve"))
@@ -340,12 +357,12 @@ int main() {
                     // если левая кнопка мыши
                     if (event.mouseButton.button == sf::Mouse::Button::Left)
                         points.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
-                    else
-                        if(triangle.size()<3) triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
-                        else {
-                            triangle.
-                            triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
-                        }
+                    else if (triangle.size() < 3)
+                        triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+                    else {
+                        triangle.erase(triangle.begin());
+                        triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+                    }
                 }
             }
         }
@@ -364,17 +381,17 @@ int main() {
 
         // рисование параметров цвета
         ShowBackgroundSetting();
-        /*// ручное добавление элементов
+        // ручное добавление элементов
         ShowAddElem();
 
         // добавление случайных точек
-        //ShowRandomize();
+        ShowRandomize();
 
-        // решение задачи
-        //ShowSolve();
+        /*// решение задачи
+        ShowSolve();
 
         // работа с файлами
-        //ShowFiles(); */
+        ShowFiles(); */
 
         // конец рисование окна
         ImGui::End();
