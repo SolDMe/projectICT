@@ -6,9 +6,12 @@
 #include <imgui.h>
 #include <fstream>
 #include <iostream>
+#include <cmath>
 
 static const int WINDOW_SIZE_X = 800;
 static const int WINDOW_SIZE_Y = 800;
+
+static const double maxDistance = sqrt(WINDOW_SIZE_X * WINDOW_SIZE_X + WINDOW_SIZE_Y * WINDOW_SIZE_Y);
 
 // путь к файлу вывода
 static const char OUTPUT_PATH[255] = "H:/projectICT/files/out.text";
@@ -53,7 +56,25 @@ struct Point {
 
 std::vector<Point> points;
 
-std::vector<Point> triangle;
+struct triangle {
+    Point p1;
+    Point p2;
+    Point p3;
+    int i;
+    triangle(const Point p1, const Point p2, const Point p3, int i) : p1(p1),p2(p2),p3(p3),i(i){
+    }
+};
+
+triangle tr(sf::Vector2i(-10,-10),sf::Vector2i(-10,-10),sf::Vector2i(-10,-10),0);
+
+struct line{
+    Point p1;
+    Point p2;
+    line(const Point p1,const Point p2) : p1(p1),p2(p2){
+    }
+};
+
+line l(sf::Vector2i(-10,-10),sf::Vector2i(-10,-10));
 
 /*// загрузка из файла
 void loadFromFile() {
@@ -184,38 +205,55 @@ void RenderTask() {
         );
     }
     ImColor clr;
-    for (auto point: triangle) {
-        clr = ImColor(100, 100, 250);
-        // добавляем в список рисования круг
-        pDrawList->AddCircleFilled(
-                point.pos,
-                4,
+    clr = ImColor(100, 100, 250);
+    // добавляем в список рисования круг
+    pDrawList->AddCircleFilled(
+            tr.p1.pos,
+            4,
+            clr,
+            20
+        );
+    pDrawList->AddCircleFilled(
+            tr.p2.pos,
+            4,
+            clr,
+            20
+    );
+    pDrawList->AddCircleFilled(
+            tr.p3.pos,
+            4,
+            clr,
+            20
+    );
+    if(tr.p3.pos.x!=-10){
+        pDrawList->AddLine(
+                tr.p1.pos,
+                tr.p2.pos,
                 clr,
-                20
+                1.5f
+        );
+        pDrawList->AddLine(
+                tr.p1.pos,
+                tr.p3.pos,
+                clr,
+                1.5f
+        );pDrawList->AddLine(
+                tr.p3.pos,
+                tr.p2.pos,
+                clr,
+                1.5f
         );
     }
-    if (triangle.size() == 3) {
-        pDrawList->AddLine(
-                triangle[0].pos,
-                triangle[1].pos,
-                clr,
+    clr = ImColor(200, 150, 150);
+    if(points.size()>=2) {l.p1=points[0]; l.p2=points[1];}
+    pDrawList->AddLine(
+                sf::Vector2i( l.p1.pos.x + (int) ((l.p1.pos.x - l.p2.pos.x) * maxDistance),
+                              l.p1.pos.y + (int) ((l.p1.pos.y - l.p2.pos.y) * maxDistance)),
+                sf::Vector2i( l.p1.pos.x - (int) ((l.p1.pos.x - l.p2.pos.x) * maxDistance),
+                              l.p1.pos.y - (int) ((l.p1.pos.y - l.p2.pos.y) * maxDistance)),
+                ImColor(200, 150, 100),
                 1.5f
-        );
-        sf::Vector2i(triangle[0].pos);
-        pDrawList->AddLine(
-                triangle[0].pos,
-                triangle[2].pos,
-                clr,
-                1.5f
-        );
-        pDrawList->AddLine(
-                triangle[1].pos,
-                triangle[2].pos,
-                clr,
-                1.5f
-        );
-    }
-    // заканчиваем рисование окна
+                );
     ImGui::End();
 }
 
@@ -244,8 +282,9 @@ void ShowRandomize() {
     ImGui::PopID();
     ImGui::PushID(2);
     if (ImGui::Button("Add 3 points of triangle")) {
-        for(int i=0;i<triangle.size();) triangle.pop_back();
-        for(int i=0;i<3;i++) triangle.emplace_back(Point::randomPoint());
+        tr.p1=Point::randomPoint();
+        tr.p2=Point::randomPoint();
+        tr.p3=Point::randomPoint();
     }
     ImGui::PopID();
 }
@@ -277,13 +316,12 @@ void ShowAddElem() {
     // задаём id, равный одному
     ImGui::PushID(1);
     // если нажата кнопка `Set 2`
-    if (ImGui::Button("Add point of triangle"))
-        if (triangle.size() < 3) {
-            triangle.emplace_back(sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]));
-        } else {
-            triangle.erase(triangle.begin());
-            triangle.emplace_back(sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]));
-        }
+    if (ImGui::Button("Add point of triangle")){
+        if(tr.i==0) tr.p1.pos=sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]);
+        if(tr.i==1) tr.p2.pos=sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]);
+        if(tr.i==2) {tr.p2.pos=sf::Vector2i(lastAddPosBuf[0], lastAddPosBuf[1]); tr.i=-1;}
+        tr.i++;
+    }
     // восстанавливаем буфер id
     ImGui::PopID();
 
@@ -327,6 +365,7 @@ int main() {
     // инициализация imgui+sfml
     ImGui::SFML::Init(window);
 
+
     // задаём цвет фона
     setColor(color);
 
@@ -357,34 +396,28 @@ int main() {
                     // если левая кнопка мыши
                     if (event.mouseButton.button == sf::Mouse::Button::Left)
                         points.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
-                    else if (triangle.size() < 3)
-                        triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
                     else {
-                        triangle.erase(triangle.begin());
-                        triangle.emplace_back(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+                        if(tr.i==0) tr.p1.pos=sf::Vector2i(event.mouseButton.x, event.mouseButton.y);
+                        if(tr.i==1) tr.p2.pos=sf::Vector2i(event.mouseButton.x, event.mouseButton.y);
+                        if(tr.i==2) {tr.p3.pos=sf::Vector2i(event.mouseButton.x, event.mouseButton.y); tr.i=-1;}
+                        tr.i++;
                     }
                 }
             }
         }
 
-        // запускаем обновление окна по таймеру с заданной частотой
         ImGui::SFML::Update(window, deltaClock.restart());
 
-        // рисование задания
         RenderTask();
 
-        // делаем окно полупрозрачным
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.13f, 0.8f));
 
-        // создаём второе окно управления
         ImGui::Begin("Control");
 
-        // рисование параметров цвета
         ShowBackgroundSetting();
-        // ручное добавление элементов
+
         ShowAddElem();
 
-        // добавление случайных точек
         ShowRandomize();
 
         /*// решение задачи
@@ -395,6 +428,7 @@ int main() {
 
         // конец рисование окна
         ImGui::End();
+
 
         // Возвращаем цвет окна к исходному
         ImGui::PopStyleColor();
