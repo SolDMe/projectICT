@@ -7,16 +7,19 @@
 #include <fstream>
 #include <iostream>
 #include <cmath>
+#include <string>
+
+using namespace std;
 
 static const int WINDOW_SIZE_X = 800;
 static const int WINDOW_SIZE_Y = 800;
 
 static const double maxDistance = sqrt(WINDOW_SIZE_X * WINDOW_SIZE_X + WINDOW_SIZE_Y * WINDOW_SIZE_Y);
 
-// путь к файлу вывода
-static const char OUTPUT_PATH[255] = "H:/projectICT/files/out.text";
-// путь к файлу ввода
-static const char INPUT_PATH[255] = "H:/projectICT/files/in.txt";
+// путь к файлу профиля 1
+static const string Profile1 = "D:\\cpp\\files\\Profile1.text";
+// путь к файлу профиля 2
+static const string Profile2 = "D:\\cpp\\files\\Profile2.text";
 
 // буфер, хранящий координаты последней добавленной вершины
 int lastAddPosBuf[2] = {0, 0};
@@ -76,48 +79,63 @@ struct line{
 
 line l(sf::Vector2i(-10,-10),sf::Vector2i(-10,-10));
 
-/*// загрузка из файла
-void loadFromFile() {
-    std::cout << "preLoad " << INPUT_PATH << std::endl;
+// загрузка из файла
+void loadFromProfile(const int n) {
+    string Profile;
+    if(n==1)  Profile = Profile1;
+    else  Profile = Profile2;
+
+    std::cout << "preLoad " << Profile << std::endl;
 
 
     // открываем поток данных для чтения из файла
-    std::ifstream input(INPUT_PATH);
+    std::ifstream input(Profile);
 
     std::cout << "preLoad2" << std::endl;
 
     // очищаем массив точек
     points.clear();
+
+    if(!input.eof()) { input >> tr.p1.pos.x; input >> tr.p1.pos.y; }
+    if(!input.eof()) { input >> tr.p2.pos.x; input >> tr.p2.pos.y; }
+    if(!input.eof()) { input >> tr.p3.pos.x; input >> tr.p3.pos.y; }
+
     // пока не достигнут конец файла
     while (!input.eof()) {
-        int x, y, s;
+        int x, y;
         input >> x; // читаем x координату
         input >> y; // читаем y координату
-        input >> s; // читаем номер множества
 
-        std::cout << x << " " << y << " " << s << std::endl;
+        std::cout << x << " " << y  << std::endl;
 
         // добавляем в динамический массив точку на основе прочитанных данных
-        points.emplace_back(Point(sf::Vector2i(x, y), s));
+        points.emplace_back(Point(sf::Vector2i(x, y)));
     }
     // закрываем файл
     input.close();
 }
 
 // запись в файл
-void saveToFile() {
+void saveToProfile(int n) {
+    string Profile;
+    if(n==1)  Profile = Profile1;
+    else  Profile = Profile2;
     // открываем поток данных для записи в файл
-    std::ofstream output(OUTPUT_PATH);
+    std::ofstream output(Profile);
+
+    output << tr.p1.pos.x << " " << tr.p1.pos.y << std::endl;
+    output << tr.p2.pos.x << " " << tr.p2.pos.y << std::endl;
+    output << tr.p3.pos.x << " " << tr.p3.pos.y << std::endl;
 
     // перебираем точки
     for (auto point: points) {
         // выводим через пробел построчно: x-координату, y-координату и номер множества
-        output << point.pos.x << " " << point.pos.y << " " << point.setNum << std::endl;
+        output << point.pos.x << " " << point.pos.y  << std::endl;
     }
 
     // закрываем
     output.close();
-}*/
+}
 
 void ShowBackgroundSetting() {
     // если не раскрыт список `Background`
@@ -134,7 +152,7 @@ void ShowBackgroundSetting() {
     }
 }
 
-/*// работа с файлами
+// работа с файлами
 void ShowFiles() {
     // если не раскрыта панель `Files`
     if (!ImGui::CollapsingHeader("Files"))
@@ -144,9 +162,9 @@ void ShowFiles() {
     // первый элемент в линии
     ImGui::PushID(0);
     // создаём кнопку загрузки
-    if (ImGui::Button("Load")) {
+    if (ImGui::Button("Load Profile1")) {
         // загружаем данные из файла
-        loadFromFile();
+        loadFromProfile(1);
     }
     // восстанавливаем буфер id
     ImGui::PopID();
@@ -156,15 +174,63 @@ void ShowFiles() {
     // второй элемент
     ImGui::PushID(1);
     // создаём кнопку сохранения
-    if (ImGui::Button("Save")) {
+    if (ImGui::Button("Save Profile1")) {
         // сохраняем задачу в файл
-        saveToFile();
+        saveToProfile(1);
     }
     // восстанавливаем буфер id
     ImGui::PopID();
+    // третий элемент
+    ImGui::PushID(2);
+    if (ImGui::Button("Load Profile2")) {
+        // загружаем данные из файла
+        loadFromProfile(2);
+    }
+    // восстанавливаем буфер id
+    ImGui::PopID();
+
+    // следующий элемент будет на той же строчке
+    ImGui::SameLine();
+    // четвертый элемент
+    ImGui::PushID(3);
+
+    if (ImGui::Button("Save Profile2")) {
+        // сохраняем задачу в файл
+        saveToProfile(2);
+    }
+    ImGui::PopID();
 }
 
-// решение задачи
+void ShowClear()
+{
+    // если не раскрыта панель `Clear`
+    if (!ImGui::CollapsingHeader("Clear"))
+        // заканчиваем выполнение
+        return;
+    ImGui::PushID(0);
+    if (ImGui::Button("Clear dots")) {
+        // очищаем массив точек
+        points.clear();
+        l.p1=sf::Vector2i(-10,-10);
+        l.p2=sf::Vector2i(-10,-10);
+    }
+    ImGui::PopID();
+    ImGui::PushID(1);
+    if (ImGui::Button("Clear triangle")) {
+        // очищаем треугольник
+        tr.p1.pos.x=-10;
+        tr.p1.pos.y=-10;
+        tr.p2.pos.x=-10;
+        tr.p2.pos.y=-10;
+        tr.p3.pos.x=-10;
+        tr.p3.pos.y=-10;
+        tr.i=0;
+    }
+    ImGui::PopID();
+}
+
+
+/* решение задачи
 void solve() {
     // у совпадающих по координатам точек меняем множество на SET_CROSSED
     for (int i = 0; i < points.size(); i++)
@@ -420,11 +486,12 @@ int main() {
 
         ShowRandomize();
 
+        ShowClear();
+
         /*// решение задачи
         ShowSolve();
-
-        // работа с файлами
-        ShowFiles(); */
+        */
+        ShowFiles();
 
         // конец рисование окна
         ImGui::End();
